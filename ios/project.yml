@@ -1,0 +1,33 @@
+name: Arkade
+options:
+  bundleIdPrefix: com.arkade
+  deploymentTarget:
+    iOS: "26.0"
+  xcodeVersion: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: false
+targets:
+  Arkade:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+      - Bindings/arkade_core.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arkade.wallet
+        INFOPLIST_FILE: Sources/Info.plist
+        LIBRARY_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/../target/aarch64-apple-ios-sim/release"
+          - "$(PROJECT_DIR)/../target/aarch64-apple-ios/release"
+        OTHER_LDFLAGS:
+          - "-larkade_core"
+          - "-framework Security"
+          - "-framework SystemConfiguration"
+        HEADER_SEARCH_PATHS:
+          - "$(PROJECT_DIR)/Bindings"
+        SWIFT_OBJC_BRIDGING_HEADER: "$(PROJECT_DIR)/Bindings/arkade_coreFFI.h"
+        DEVELOPMENT_TEAM: ""
+    dependencies: []

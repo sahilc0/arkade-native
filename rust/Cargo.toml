@@ -1,0 +1,53 @@
+[package]
+name = "arkade-core"
+version = "0.1.0"
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+name = "arkade_core"
+
+[dependencies]
+# Ark SDK
+ark-client = { workspace = true }
+ark-core = { workspace = true }
+ark-bdk-wallet = { workspace = true }
+
+# Internal
+arkade-boltz = { workspace = true }
+
+# Bitcoin
+bitcoin = { workspace = true }
+bip39 = { workspace = true }
+secp256k1 = { workspace = true }
+esplora-client = { workspace = true }
+
+# FFI
+uniffi = { workspace = true }
+
+# Async + channels
+tokio = { workspace = true }
+flume = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Storage
+sqlx = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# TLS
+rustls = { workspace = true }
+
+# Misc
+thiserror = { workspace = true }
+rand = { workspace = true }
+hex = { workspace = true }
+anyhow = { workspace = true }
+
+[build-dependencies]
+uniffi = { workspace = true, features = ["build"] }

@@ -1,0 +1,4 @@
+module arkade_coreFFI {
+    header "arkade_coreFFI.h"
+    export *
+}

@@ -1,0 +1,5 @@
+[bindings.swift]
+generate_immutable_records = true
+
+[bindings.kotlin]
+package_name = "com.arkade.core"

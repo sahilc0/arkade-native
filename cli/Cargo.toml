@@ -1,0 +1,15 @@
+[package]
+name = "arkade-cli"
+version = "0.1.0"
+edition.workspace = true
+
+[[bin]]
+name = "arkade"
+path = "src/main.rs"
+
+[dependencies]
+arkade-core = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
