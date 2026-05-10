@@ -79,22 +79,25 @@ struct ArkadeButtonStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .font(Arkade.buttonFont)
+            .font(.system(size: 14, weight: .regular, design: .monospaced))
+            .textCase(.uppercase)
             .frame(maxWidth: .infinity)
-            .frame(minHeight: Arkade.minTap)
+            .frame(minHeight: Arkade.minTap + 2)
             .foregroundStyle(variant.foreground)
             .background(variant.background)
-            .clipShape(RoundedRectangle(cornerRadius: Arkade.radius))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .shadow(color: variant.shadow, radius: 0, x: 0, y: 4)
     }
 }
 
 enum ArkadeButtonVariant {
-    case primary, secondary, outline, danger
+    case primary, secondary, secondaryOnDark, outline, danger
 
     var background: Color {
         switch self {
         case .primary: Arkade.purple
         case .secondary: Arkade.dark10
+        case .secondaryOnDark: Arkade.white.opacity(0.10)
         case .outline: .clear
         case .danger: Arkade.red
         }
@@ -104,7 +107,16 @@ enum ArkadeButtonVariant {
         switch self {
         case .primary, .danger: Arkade.white
         case .secondary: Arkade.black
+        case .secondaryOnDark: Arkade.white
         case .outline: Arkade.black
+        }
+    }
+
+    var shadow: Color {
+        switch self {
+        case .primary: Arkade.purpleBg
+        case .secondary, .secondaryOnDark, .outline: Color.black.opacity(0.14)
+        case .danger: Arkade.red.opacity(0.65)
         }
     }
 }

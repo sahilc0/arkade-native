@@ -7,7 +7,7 @@ struct ContentView: View {
         Group {
             switch app.state.auth {
             case .unauthenticated:
-                InitScreen()
+                OnboardingFlowScreen()
             case .locked:
                 UnlockScreen()
             case .connecting:

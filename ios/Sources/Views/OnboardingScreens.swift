@@ -1,5 +1,30 @@
 import SwiftUI
 
+// MARK: - Onboarding Flow
+
+struct OnboardingFlowScreen: View {
+    @Environment(AppManager.self) private var app
+
+    var body: some View {
+        switch app.currentScreen {
+        case .restoreWallet:
+            RestoreWalletScreen()
+        case .createWallet:
+            CreateWalletScreen()
+        case .setPassword:
+            SetPasswordScreen()
+        case .connecting:
+            ConnectingScreen()
+        case .onboardingSuccess:
+            OnboardingSuccessScreen()
+        case .unavailable(let reason):
+            UnavailableScreen(reason: reason)
+        default:
+            InitScreen()
+        }
+    }
+}
+
 // MARK: - Loading
 
 struct LoadingScreen: View {
@@ -17,46 +42,182 @@ struct LoadingScreen: View {
 
 struct InitScreen: View {
     @Environment(AppManager.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var contentReady = false
 
     var body: some View {
         ZStack {
             Arkade.bgDark.ignoresSafeArea()
+            PixelSunrise()
+                .opacity(contentReady ? 1 : 0)
+                .animation(.easeOut(duration: reduceMotion ? 0 : 1.1), value: contentReady)
 
             VStack(spacing: 0) {
                 Spacer()
 
-                VStack(spacing: 12) {
-                    Text("Arkade")
-                        .font(.system(size: 24, weight: .medium))
-                        .tracking(Arkade.headingTracking)
-                        .foregroundStyle(Arkade.white)
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        PixelArkadeLogo(size: 32)
+                            .foregroundStyle(Arkade.white)
 
-                    Text("Bitcoin, faster")
-                        .font(Arkade.smallFont)
-                        .foregroundStyle(Arkade.gray)
+                        Text("Welcome to Arkade")
+                            .font(.system(size: 24, weight: .medium))
+                            .tracking(Arkade.headingTracking)
+                            .foregroundStyle(Arkade.white)
+                    }
+
+                    VStack(spacing: 10) {
+                        OnboardingBullet(
+                            icon: "bolt.fill",
+                            text: "Fast payments, swaps, and more"
+                        )
+                        OnboardingBullet(
+                            icon: "globe",
+                            text: "Access Lightning, mint assets, and more. All secured by bitcoin"
+                        )
+                        OnboardingBullet(
+                            icon: "shield.checkered",
+                            text: "Stay in control. Settle and withdraw on your terms"
+                        )
+                    }
                 }
+                .padding(.horizontal, Arkade.hPadding)
+                .opacity(contentReady ? 1 : 0)
+                .offset(y: contentReady && !reduceMotion ? 0 : 8)
+                .animation(.easeOut(duration: reduceMotion ? 0 : 0.28).delay(reduceMotion ? 0 : 0.08), value: contentReady)
 
                 Spacer()
 
                 VStack(spacing: 12) {
                     Button {
+                        app.haptic(.medium)
                         app.dispatch(.createWallet(password: ""))
                     } label: {
-                        Text("Create wallet")
+                        Text("+ Create wallet")
                             .arkadeButton(.primary)
                     }
+                    .buttonStyle(PressScaleButtonStyle())
 
                     Button {
+                        app.haptic(.light)
                         app.dispatch(.pushScreen(screen: .restoreWallet))
                     } label: {
-                        Text("Restore wallet")
-                            .arkadeButton(.secondary)
+                        Text("Import wallet")
+                            .arkadeButton(.secondaryOnDark)
                     }
+                    .buttonStyle(PressScaleButtonStyle())
                 }
                 .padding(.horizontal, Arkade.hPadding)
                 .padding(.bottom, 48)
+                .opacity(contentReady ? 1 : 0)
+                .offset(y: contentReady && !reduceMotion ? 0 : 16)
+                .animation(.easeOut(duration: reduceMotion ? 0 : 0.34).delay(reduceMotion ? 0 : 0.18), value: contentReady)
+            }
+
+            if !contentReady && !reduceMotion {
+                SplashLogo {
+                    contentReady = true
+                }
             }
         }
+        .onAppear {
+            if reduceMotion {
+                contentReady = true
+            }
+        }
+    }
+}
+
+private struct OnboardingBullet: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Arkade.purpleLight)
+                .frame(width: 40, height: 40)
+                .background(Arkade.purpleBg)
+                .clipShape(Circle())
+
+            Text(text)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(Arkade.white.opacity(0.82))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+private struct SplashLogo: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var settled = false
+    let onComplete: () -> Void
+
+    var body: some View {
+        ZStack {
+            Arkade.bgDark.ignoresSafeArea()
+            PixelArkadeLogo(size: 104)
+                .foregroundStyle(Arkade.white)
+                .scaleEffect(settled ? 0.78 : 1)
+                .opacity(settled ? 0 : 1)
+                .animation(.easeOut(duration: reduceMotion ? 0 : 0.35), value: settled)
+        }
+        .task {
+            try? await Task.sleep(for: .milliseconds(420))
+            settled = true
+            try? await Task.sleep(for: .milliseconds(260))
+            onComplete()
+        }
+    }
+}
+
+private struct PixelSunrise: View {
+    var body: some View {
+        VStack {
+            Ellipse()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Arkade.purple.opacity(0.56),
+                            Arkade.purple.opacity(0.25),
+                            .clear,
+                        ],
+                        center: .top,
+                        startRadius: 8,
+                        endRadius: 280
+                    )
+                )
+                .frame(height: 260)
+                .scaleEffect(x: 1.7, y: 1, anchor: .top)
+            Spacer()
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+}
+
+private struct PixelArkadeLogo: View {
+    let size: CGFloat
+
+    var body: some View {
+        GeometryReader { proxy in
+            let unit = min(proxy.size.width, proxy.size.height) / 4
+            Path { path in
+                path.addRect(CGRect(x: 0, y: unit, width: unit, height: unit))
+                path.addRect(CGRect(x: unit, y: 0, width: 2 * unit, height: unit))
+                path.addRect(CGRect(x: 3 * unit, y: unit, width: unit, height: unit))
+                path.addRect(CGRect(x: 0, y: 2 * unit, width: unit, height: unit))
+                path.addRect(CGRect(x: unit, y: 2 * unit, width: 2 * unit, height: unit))
+                path.addRect(CGRect(x: 3 * unit, y: 2 * unit, width: unit, height: unit))
+                path.addRect(CGRect(x: 0, y: 3 * unit, width: unit, height: unit))
+                path.addRect(CGRect(x: 3 * unit, y: 3 * unit, width: unit, height: unit))
+            }
+            .fill(.foreground)
+        }
+        .frame(width: size, height: size)
     }
 }
 
@@ -70,10 +231,29 @@ struct RestoreWalletScreen: View {
 
     var body: some View {
         VStack(spacing: Arkade.gap) {
+            HStack {
+                Button {
+                    app.haptic(.light)
+                    app.dispatch(.popScreen)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Arkade.dark80)
+                        .frame(width: 44, height: 44)
+                        .background(Arkade.dark05)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(PressScaleButtonStyle())
+
+                Spacer()
+            }
+            .padding(.horizontal, Arkade.hPadding)
+            .padding(.top, 12)
+
             Spacer()
 
             VStack(spacing: 8) {
-                Text("Restore wallet")
+                Text("Import wallet")
                     .font(.system(size: 24, weight: .medium))
                     .tracking(Arkade.headingTracking)
                 Text("Enter your 12-word recovery phrase")
