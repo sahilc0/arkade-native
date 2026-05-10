@@ -348,6 +348,8 @@ impl AppCore {
             AppAction::ResetWallet => {
                 let mnemonic_path = format!("{}/mnemonic", self.data_dir);
                 let _ = std::fs::remove_file(&mnemonic_path);
+                let private_key_path = format!("{}/private_key", self.data_dir);
+                let _ = std::fs::remove_file(&private_key_path);
                 let swaps_path = format!("{}/swaps.sqlite", self.data_dir);
                 let _ = std::fs::remove_file(&swaps_path);
                 self.ark_client = None;

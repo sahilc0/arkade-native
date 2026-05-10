@@ -47,6 +47,7 @@ rustls = { workspace = true }
 thiserror = { workspace = true }
 rand = { workspace = true }
 hex = { workspace = true }
+bech32 = { workspace = true }
 anyhow = { workspace = true }
 
 [build-dependencies]

@@ -44,6 +44,7 @@ struct InitScreen: View {
     @Environment(AppManager.self) private var app
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var contentReady = false
+    @State private var showOptions = false
 
     var body: some View {
         ZStack {
@@ -100,10 +101,10 @@ struct InitScreen: View {
 
                     Button {
                         app.haptic(.light)
-                        app.dispatch(.pushScreen(screen: .restoreWallet))
+                        showOptions = true
                     } label: {
-                        Text("Import wallet")
-                            .arkadeButton(.secondaryOnDark)
+                        Text("Other login options")
+                            .arkadeButton(.clearOnDark)
                     }
                     .buttonStyle(PressScaleButtonStyle())
                 }
@@ -124,6 +125,27 @@ struct InitScreen: View {
             if reduceMotion {
                 contentReady = true
             }
+        }
+        .sheet(isPresented: $showOptions) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Other login options")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(Arkade.black)
+
+                Button {
+                    app.haptic(.light)
+                    showOptions = false
+                    app.dispatch(.pushScreen(screen: .restoreWallet))
+                } label: {
+                    Text("Restore wallet")
+                        .arkadeButton(.secondary)
+                }
+                .buttonStyle(PressScaleButtonStyle())
+            }
+            .padding(Arkade.hPadding)
+            .presentationDetents([.height(170)])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(.regularMaterial)
         }
     }
 }
@@ -225,9 +247,14 @@ private struct PixelArkadeLogo: View {
 
 struct RestoreWalletScreen: View {
     @Environment(AppManager.self) private var app
-    @State private var mnemonic = ""
+    @State private var privateKey = ""
 
-    var wordCount: Int { mnemonic.split(separator: " ").count }
+    var privateKeyInput: String { privateKey.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var isNsec: Bool { privateKeyInput.hasPrefix("nsec") }
+    var isHexKey: Bool {
+        privateKeyInput.count == 64 && privateKeyInput.allSatisfy { $0.isHexDigit }
+    }
+    var isValidInput: Bool { isNsec || isHexKey }
 
     var body: some View {
         VStack(spacing: Arkade.gap) {
@@ -253,15 +280,15 @@ struct RestoreWalletScreen: View {
             Spacer()
 
             VStack(spacing: 8) {
-                Text("Import wallet")
+                Text("Restore wallet")
                     .font(.system(size: 24, weight: .medium))
                     .tracking(Arkade.headingTracking)
-                Text("Enter your 12-word recovery phrase")
+                Text("Enter your private key")
                     .font(Arkade.smallFont)
                     .foregroundStyle(Arkade.dark50)
             }
 
-            TextEditor(text: $mnemonic)
+            TextEditor(text: $privateKey)
                 .frame(height: 100)
                 .padding(12)
                 .background(Arkade.dark10)
@@ -270,20 +297,23 @@ struct RestoreWalletScreen: View {
                 .textInputAutocapitalization(.never)
                 .padding(.horizontal, Arkade.hPadding)
 
-            Text("\(wordCount) / 12 words")
+            Text(isValidInput || privateKeyInput.isEmpty ? "Your private key should start with the 'nsec' string. Do not share it with anyone." : "Invalid private key format")
                 .font(Arkade.tinyFont)
-                .foregroundStyle(wordCount >= 12 ? Arkade.green : Arkade.dark50)
+                .foregroundStyle(isValidInput ? Arkade.green : Arkade.dark50)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Arkade.hPadding)
 
             Spacer()
 
             Button {
-                app.dispatch(.restoreWallet(mnemonic: mnemonic, password: ""))
+                app.haptic(.medium)
+                app.dispatch(.restoreWallet(mnemonic: privateKeyInput, password: ""))
             } label: {
-                Text("Restore")
+                Text("Continue")
                     .arkadeButton(.primary)
             }
-            .disabled(wordCount < 12)
-            .opacity(wordCount < 12 ? 0.5 : 1)
+            .disabled(!isValidInput)
+            .opacity(isValidInput ? 1 : 0.5)
             .padding(.horizontal, Arkade.hPadding)
             .padding(.bottom, 48)
         }

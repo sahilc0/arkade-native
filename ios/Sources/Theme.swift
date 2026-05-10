@@ -91,13 +91,14 @@ struct ArkadeButtonStyle: ViewModifier {
 }
 
 enum ArkadeButtonVariant {
-    case primary, secondary, secondaryOnDark, outline, danger
+    case primary, secondary, secondaryOnDark, clearOnDark, outline, danger
 
     var background: Color {
         switch self {
         case .primary: Arkade.purple
         case .secondary: Arkade.dark10
         case .secondaryOnDark: Arkade.white.opacity(0.10)
+        case .clearOnDark: .clear
         case .outline: .clear
         case .danger: Arkade.red
         }
@@ -108,6 +109,7 @@ enum ArkadeButtonVariant {
         case .primary, .danger: Arkade.white
         case .secondary: Arkade.black
         case .secondaryOnDark: Arkade.white
+        case .clearOnDark: Arkade.white
         case .outline: Arkade.black
         }
     }
@@ -116,6 +118,7 @@ enum ArkadeButtonVariant {
         switch self {
         case .primary: Arkade.purpleBg
         case .secondary, .secondaryOnDark, .outline: Color.black.opacity(0.14)
+        case .clearOnDark: .clear
         case .danger: Arkade.red.opacity(0.65)
         }
     }

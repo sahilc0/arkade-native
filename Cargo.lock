@@ -250,6 +250,7 @@ dependencies = [
  "ark-client",
  "ark-core",
  "arkade-boltz",
+ "bech32",
  "bip39",
  "bitcoin",
  "esplora-client",
