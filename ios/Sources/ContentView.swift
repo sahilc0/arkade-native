@@ -13,7 +13,7 @@ struct ContentView: View {
             case .connecting:
                 ConnectingScreen()
             case .connected:
-                MainTabView()
+                WalletRootView()
             }
         }
         .background(Arkade.canvasGrouped.ignoresSafeArea())
@@ -31,33 +31,13 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Main Tab View
+// MARK: - Wallet Root
 
-struct MainTabView: View {
-    @Environment(AppManager.self) private var app
-
+struct WalletRootView: View {
     var body: some View {
-        TabView {
-            Tab("Wallet", systemImage: "wallet.pass.fill") {
-                NavigationStack {
-                    HomeScreen()
-                        .arkadeNavigationDestinations()
-                }
-            }
-
-            Tab("Apps", systemImage: "square.grid.2x2.fill") {
-                NavigationStack {
-                    AppsScreen()
-                        .arkadeNavigationDestinations()
-                }
-            }
-
-            Tab("Settings", systemImage: "gearshape.fill") {
-                NavigationStack {
-                    SettingsMenuScreen()
-                        .arkadeNavigationDestinations()
-                }
-            }
+        NavigationStack {
+            HomeScreen()
+                .arkadeNavigationDestinations()
         }
         .tint(Arkade.purple)
     }

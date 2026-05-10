@@ -120,6 +120,7 @@ struct SendFormScreen: View {
                             .font(.system(size: 34, weight: .medium, design: .rounded))
                             .tracking(Arkade.headingTracking)
                             .monospacedDigit()
+                            .disabled(amountLocked)
                         Text(selectedAsset?.ticker ?? "sats")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(.secondary)
@@ -169,12 +170,17 @@ struct SendFormScreen: View {
         .onAppear {
             app.dispatch(.refreshAssets)
             app.dispatch(.refreshBalance)
+            app.dispatch(.connectBoltz)
             if recipient.isEmpty, let existing = app.state.sendFlow?.recipient, !existing.isEmpty {
                 recipient = existing
             }
             if amount.isEmpty, let sats = app.state.sendFlow?.amountSats, sats > 0 {
                 amount = "\(sats)"
             }
+        }
+        .onChange(of: app.state.sendFlow?.amountSats ?? 0) { _, sats in
+            guard amountLocked, sats > 0 else { return }
+            amount = "\(sats)"
         }
         .sheet(isPresented: $showScanner) {
             QRScannerSheet(title: "Scan recipient") { code in
@@ -203,7 +209,9 @@ struct SendFormScreen: View {
     }
 
     private var buttonDisabled: Bool {
-        recipient.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || parsedAmount == 0
+        recipient.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || effectiveAmount == 0
+            || app.state.sendFlow?.error != nil
     }
 
     private var parsedAmount: UInt64 {
@@ -211,6 +219,18 @@ struct SendFormScreen: View {
             return parseAssetAmount(amount, decimals: selectedAsset.decimals)
         }
         return UInt64(amount.filter(\.isNumber)) ?? 0
+    }
+
+    private var effectiveAmount: UInt64 {
+        if amountLocked, let invoiceAmount = app.state.sendFlow?.amountSats {
+            return invoiceAmount
+        }
+        return parsedAmount
+    }
+
+    private var amountLocked: Bool {
+        app.state.sendFlow?.recipientType == .lightningInvoice
+            && (app.state.sendFlow?.amountSats ?? 0) > 0
     }
 
     private func applyMax() {
@@ -234,7 +254,7 @@ struct SendFormScreen: View {
             app.dispatch(.transferAsset(assetId: selectedAsset.assetId, recipient: cleanRecipient, amount: parsedAmount))
         } else {
             app.dispatch(.parseRecipient(input: cleanRecipient))
-            app.dispatch(.setSendAmount(sats: parsedAmount))
+            app.dispatch(.setSendAmount(sats: effectiveAmount))
             app.dispatch(.pushScreen(screen: .sendDetails))
         }
     }
@@ -282,6 +302,10 @@ struct SendDetailsScreen: View {
                             Divider()
                             row("Fee", value: "\(Arkade.sats(fee)) sats")
                         }
+                        if flow.confirmation?.isSwap == true {
+                            Divider()
+                            row("Route", value: "Boltz Lightning swap")
+                        }
                     }
                     .arkadeLiquidCard()
 
@@ -311,7 +335,7 @@ struct SendDetailsScreen: View {
                             app.haptic(.medium)
                             app.dispatch(.confirmSend)
                         } label: {
-                            Text("Confirm send").arkadeButton(.primary)
+                            Text(flow.recipientType == .lightningInvoice ? "Pay invoice" : "Confirm send").arkadeButton(.primary)
                         }
                     }
                 }
@@ -419,7 +443,7 @@ struct ReceiveQRCodeScreen: View {
         var id: String { rawValue }
         var name: String {
             switch self {
-            case .btc: "bitcoin"
+            case .btc: "Bitcoin"
             case .usdt: "USDT"
             case .usdc: "USDC"
             }
@@ -430,7 +454,7 @@ struct ReceiveQRCodeScreen: View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
 
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 receiveAssetMenu
 
                 if let flow = app.state.receiveFlow, flow.isGenerating {
@@ -443,11 +467,11 @@ struct ReceiveQRCodeScreen: View {
                         .frame(minHeight: 260)
                 } else {
                     QRCodeView(data: qrData)
-                        .frame(width: 260, height: 260)
-                        .padding(12)
+                        .frame(width: 300, height: 300)
+                        .padding(14)
                         .background(Arkade.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                        .shadow(color: .black.opacity(0.08), radius: 18, x: 0, y: 10)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 6)
                         .onTapGesture {
                             copy(qrData)
                         }
@@ -475,21 +499,35 @@ struct ReceiveQRCodeScreen: View {
         .navigationTitle("Receive")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
+                LinearGradient(
+                    stops: [
+                        .init(color: Arkade.canvasGrouped.opacity(0), location: 0),
+                        .init(color: Arkade.canvasGrouped.opacity(0.78), location: 0.55),
+                        .init(color: Arkade.canvasGrouped, location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 24)
+
                 HStack(spacing: 10) {
-                    Button(requestedAmount > 0 ? "Edit amount" : "Add amount") {
+                    Button {
                         app.haptic(.light)
                         amount = requestedAmount > 0 ? "\(requestedAmount)" : ""
                         showAmountSheet = true
+                    } label: {
+                        Text(requestedAmount > 0 ? "Edit amount" : "Add amount")
+                            .arkadeButton(.secondary)
                     }
-                    .buttonStyle(.glass)
                     .frame(maxWidth: .infinity)
 
-                    Button("Copy") {
+                    Button {
                         app.haptic(.light)
                         showCopySheet = true
+                    } label: {
+                        Text("Copy").arkadeButton(.secondary)
                     }
-                    .buttonStyle(.glass)
                     .frame(maxWidth: .infinity)
                 }
 
@@ -498,8 +536,9 @@ struct ReceiveQRCodeScreen: View {
                         .arkadeButton(.primary)
                 }
             }
-            .padding(Arkade.hPadding)
-            .background(.regularMaterial)
+            .padding(.horizontal, Arkade.hPadding)
+            .padding(.bottom, 8)
+            .background(Arkade.canvasGrouped)
         }
         .sheet(isPresented: $showAmountSheet) {
             NavigationStack {
@@ -527,13 +566,14 @@ struct ReceiveQRCodeScreen: View {
                     }
 
                     if requestedAmount > 0 {
-                        Button("Clear amount") {
+                        Button {
                             app.haptic(.light)
                             app.dispatch(.setReceiveAmount(sats: 0))
                             app.dispatch(.generateReceiveAddress)
                             showAmountSheet = false
+                        } label: {
+                            Text("Clear amount").arkadeButton(.secondary)
                         }
-                        .buttonStyle(.glass)
                     }
 
                     Spacer()

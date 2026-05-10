@@ -237,13 +237,12 @@ impl AppCore {
         if std::path::Path::new(&private_key_path).exists()
             || std::path::Path::new(&mnemonic_path).exists()
         {
-            self.state.auth = AuthState::Locked;
-            self.state.router.screen_stack = vec![Screen::Unlock];
+            self.handle_unlock_wallet(String::new());
         } else {
             self.state.auth = AuthState::Unauthenticated;
             self.state.router.screen_stack = vec![Screen::Init];
+            self.emit_state();
         }
-        self.emit_state();
     }
 
     fn load_private_key(&self) -> anyhow::Result<SecretKey> {
@@ -356,10 +355,8 @@ fn parse_private_key(input: &str) -> anyhow::Result<SecretKey> {
 mod tests {
     use super::parse_private_key;
 
-    const FIXTURE_NSEC: &str =
-        "nsec13374vlgh58p4sw9nrdc72rmf40x62qgvk6jac8rekwm872p0esesxqx6t5";
-    const FIXTURE_HEX: &str =
-        "8c7d567d17a1c35838b31b71e50f69abcda5010cb6a5dc1c79b3b67f282fcc33";
+    const FIXTURE_NSEC: &str = "nsec13374vlgh58p4sw9nrdc72rmf40x62qgvk6jac8rekwm872p0esesxqx6t5";
+    const FIXTURE_HEX: &str = "8c7d567d17a1c35838b31b71e50f69abcda5010cb6a5dc1c79b3b67f282fcc33";
 
     #[test]
     fn parses_nsec_like_arkade_wallet() {

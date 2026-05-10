@@ -466,7 +466,7 @@ impl Default for AppConfig {
             theme: Theme::System,
             display_unit: DisplayUnit::Sats,
             fiat_currency: FiatCurrency::Usd,
-            currency_display: CurrencyDisplay::SatsOnly,
+            currency_display: CurrencyDisplay::FiatOnly,
             haptics_enabled: true,
             notifications_enabled: true,
             show_balance: true,

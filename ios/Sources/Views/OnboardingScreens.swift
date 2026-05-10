@@ -58,13 +58,18 @@ struct InitScreen: View {
 
                 VStack(alignment: .leading, spacing: 24) {
                     VStack(alignment: .leading, spacing: 12) {
-                        PixelArkadeLogo(size: 32)
+                        ArkadeOnboardingLogo(size: 32)
                             .foregroundStyle(Arkade.white)
 
-                        Text("Welcome to Arkade")
-                            .font(.system(size: 24, weight: .medium))
-                            .tracking(Arkade.headingTracking)
-                            .foregroundStyle(Arkade.white)
+                        HStack(alignment: .center, spacing: 8) {
+                            Text("Welcome to Arkade")
+                                .font(.system(size: 24, weight: .medium))
+                                .tracking(Arkade.headingTracking)
+                            InvaderGlyph()
+                                .fill(Arkade.white)
+                                .frame(width: 24, height: 24)
+                        }
+                        .foregroundStyle(Arkade.white)
                     }
 
                     VStack(spacing: 10) {
@@ -74,7 +79,7 @@ struct InitScreen: View {
                         )
                         OnboardingBullet(
                             icon: "globe",
-                            text: "Access Lightning, mint assets, and more. All secured by bitcoin"
+                            text: "Access Lightning, mint assets, and more. All secured by Bitcoin"
                         )
                         OnboardingBullet(
                             icon: "shield.checkered",
@@ -150,6 +155,29 @@ struct InitScreen: View {
     }
 }
 
+private struct InvaderGlyph: Shape {
+    func path(in rect: CGRect) -> Path {
+        let unit = min(rect.width, rect.height) / 8
+        let dx = rect.midX - 4 * unit
+        let dy = rect.midY - 4 * unit
+        let cells: [(CGFloat, CGFloat)] = [
+            (1, 0), (6, 0),
+            (2, 1), (5, 1),
+            (1, 2), (2, 2), (3, 2), (4, 2), (5, 2), (6, 2),
+            (0, 3), (2, 3), (3, 3), (4, 3), (5, 3), (7, 3),
+            (0, 4), (1, 4), (2, 4), (3, 4), (4, 4), (5, 4), (6, 4), (7, 4),
+            (1, 5), (6, 5),
+            (0, 6), (2, 6), (5, 6), (7, 6)
+        ]
+
+        var path = Path()
+        for (x, y) in cells {
+            path.addRect(CGRect(x: dx + x * unit, y: dy + y * unit, width: unit, height: unit))
+        }
+        return path
+    }
+}
+
 private struct OnboardingBullet: View {
     let icon: String
     let text: String
@@ -181,7 +209,7 @@ private struct SplashLogo: View {
     var body: some View {
         ZStack {
             Arkade.bgDark.ignoresSafeArea()
-            PixelArkadeLogo(size: 104)
+            ArkadeOnboardingLogo(size: 100)
                 .foregroundStyle(Arkade.white)
                 .scaleEffect(settled ? 0.78 : 1)
                 .opacity(settled ? 0 : 1)
@@ -221,25 +249,39 @@ private struct PixelSunrise: View {
     }
 }
 
-private struct PixelArkadeLogo: View {
+private struct ArkadeOnboardingLogo: View {
     let size: CGFloat
 
     var body: some View {
-        GeometryReader { proxy in
-            let unit = min(proxy.size.width, proxy.size.height) / 4
-            Path { path in
-                path.addRect(CGRect(x: 0, y: unit, width: unit, height: unit))
-                path.addRect(CGRect(x: unit, y: 0, width: 2 * unit, height: unit))
-                path.addRect(CGRect(x: 3 * unit, y: unit, width: unit, height: unit))
-                path.addRect(CGRect(x: 0, y: 2 * unit, width: unit, height: unit))
-                path.addRect(CGRect(x: unit, y: 2 * unit, width: 2 * unit, height: unit))
-                path.addRect(CGRect(x: 3 * unit, y: 2 * unit, width: unit, height: unit))
-                path.addRect(CGRect(x: 0, y: 3 * unit, width: unit, height: unit))
-                path.addRect(CGRect(x: 3 * unit, y: 3 * unit, width: unit, height: unit))
-            }
+        ArkadeOnboardingLogoShape()
             .fill(.foreground)
-        }
         .frame(width: size, height: size)
+    }
+}
+
+private struct ArkadeOnboardingLogoShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let s = min(rect.width, rect.height) / 35
+        let dx = rect.midX - 17.5 * s
+        let dy = rect.midY - 17.5 * s
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: dx + x * s, y: dy + y * s) }
+
+        var path = Path()
+        path.move(to: p(0, 8.75))
+        path.addLine(to: p(8.75, 0))
+        path.addLine(to: p(26.25, 0))
+        path.addLine(to: p(35, 8.75))
+        path.addLine(to: p(35, 17.5))
+        path.addLine(to: p(26.25, 17.5))
+        path.addLine(to: p(26.25, 8.75))
+        path.addLine(to: p(8.75, 8.75))
+        path.addLine(to: p(8.75, 17.5))
+        path.addLine(to: p(0, 17.5))
+        path.closeSubpath()
+        path.addRect(CGRect(x: dx + 8.75 * s, y: dy + 17.5 * s, width: 17.5 * s, height: 8.75 * s))
+        path.addRect(CGRect(x: dx, y: dy + 26.25 * s, width: 8.75 * s, height: 8.75 * s))
+        path.addRect(CGRect(x: dx + 26.25 * s, y: dy + 26.25 * s, width: 8.75 * s, height: 8.75 * s))
+        return path
     }
 }
 
@@ -257,7 +299,88 @@ struct RestoreWalletScreen: View {
     var isValidInput: Bool { isNsec || isHexKey }
 
     var body: some View {
-        VStack(spacing: Arkade.gap) {
+        VStack(spacing: 0) {
+            RestoreHeader()
+
+            VStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Private key")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Arkade.dark50)
+
+                    TextField("nsec...", text: $privateKey, axis: .vertical)
+                        .font(.system(size: 16, weight: .regular, design: .monospaced))
+                        .lineLimit(1...3)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 13)
+                        .background(Arkade.dark05)
+                        .clipShape(RoundedRectangle(cornerRadius: Arkade.radius, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: Arkade.radius, style: .continuous)
+                                .stroke(inputBorderColor, lineWidth: 1)
+                        }
+                }
+
+                if !privateKeyInput.isEmpty && !isValidInput {
+                    Text("Invalid private key format")
+                        .font(Arkade.tinyFont)
+                        .foregroundStyle(Arkade.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(.horizontal, Arkade.hPadding)
+            .padding(.top, 20)
+
+            Spacer()
+
+            Text("Your private key should start with the 'nsec' string. Do not share it with anyone.")
+                .font(Arkade.smallFont)
+                .foregroundStyle(Arkade.dark50)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, Arkade.hPadding)
+                .padding(.bottom, 20)
+
+            VStack(spacing: 8) {
+                Button {
+                    app.haptic(.medium)
+                    app.dispatch(.restoreWallet(mnemonic: privateKeyInput, password: ""))
+                } label: {
+                    Text("Continue").arkadeButton(.primary)
+                }
+                .disabled(!isValidInput)
+                .opacity(isValidInput ? 1 : 0.5)
+
+                Button {
+                    app.haptic(.light)
+                    app.dispatch(.popScreen)
+                } label: {
+                    Text("Cancel").arkadeButton(.secondary)
+                }
+            }
+            .padding(.horizontal, Arkade.hPadding)
+            .padding(.bottom, 48)
+        }
+        .background(Arkade.canvas.ignoresSafeArea())
+    }
+
+    private var inputBorderColor: Color {
+        if privateKeyInput.isEmpty { return Arkade.dark10 }
+        return isValidInput ? Arkade.green.opacity(0.45) : Arkade.red.opacity(0.45)
+    }
+}
+
+private struct RestoreHeader: View {
+    @Environment(AppManager.self) private var app
+
+    var body: some View {
+        ZStack {
+            Text("Restore wallet")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(.primary)
+
             HStack {
                 Button {
                     app.haptic(.light)
@@ -267,56 +390,14 @@ struct RestoreWalletScreen: View {
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(Arkade.dark80)
                         .frame(width: 44, height: 44)
-                        .background(Arkade.dark05)
-                        .clipShape(Circle())
                 }
                 .buttonStyle(PressScaleButtonStyle())
 
                 Spacer()
             }
-            .padding(.horizontal, Arkade.hPadding)
-            .padding(.top, 12)
-
-            Spacer()
-
-            VStack(spacing: 8) {
-                Text("Restore wallet")
-                    .font(.system(size: 24, weight: .medium))
-                    .tracking(Arkade.headingTracking)
-                Text("Enter your private key")
-                    .font(Arkade.smallFont)
-                    .foregroundStyle(Arkade.dark50)
-            }
-
-            TextEditor(text: $privateKey)
-                .frame(height: 100)
-                .padding(12)
-                .background(Arkade.dark10)
-                .clipShape(RoundedRectangle(cornerRadius: Arkade.radius))
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .padding(.horizontal, Arkade.hPadding)
-
-            Text(isValidInput || privateKeyInput.isEmpty ? "Your private key should start with the 'nsec' string. Do not share it with anyone." : "Invalid private key format")
-                .font(Arkade.tinyFont)
-                .foregroundStyle(isValidInput ? Arkade.green : Arkade.dark50)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, Arkade.hPadding)
-
-            Spacer()
-
-            Button {
-                app.haptic(.medium)
-                app.dispatch(.restoreWallet(mnemonic: privateKeyInput, password: ""))
-            } label: {
-                Text("Continue")
-                    .arkadeButton(.primary)
-            }
-            .disabled(!isValidInput)
-            .opacity(isValidInput ? 1 : 0.5)
-            .padding(.horizontal, Arkade.hPadding)
-            .padding(.bottom, 48)
         }
+        .frame(height: 56)
+        .padding(.horizontal, 4)
     }
 }
 
